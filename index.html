@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Tenant Task Manager</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      background-color: #1e1e2e;
+      color: #e2e8f0;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .scale-on-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .scale-on-hover:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 16px rgba(245, 158, 11, 0.1);
+    }
+
+    .button-primary {
+      background-color: #f59e0b;
+      color: #000;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 10px 16px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .button-primary:hover {
+      background-color: #d97706;
+      transform: scale(1.02);
+    }
+
+    .button-primary:disabled {
+      background-color: #64748b;
+      cursor: not-allowed;
+      transform: scale(1);
+    }
+
+    .button-secondary {
+      background-color: #475569;
+      color: #fff;
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 8px 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .button-secondary:hover {
+      background-color: #64748b;
+    }
+
+    .card {
+      background-color: #2a2a3e;
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: #f59e0b;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
+    }
+
+    .input-field {
+      background-color: #1e1e2e;
+      border: 1px solid #475569;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-admin {
+      background-color: #f59e0b;
+      color: #000;
+    }
+
+    .badge-member {
+      background-color: #475569;
+      color: #e2e8f0;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+
+    .modal-content {
+      background-color: #2a2a3e;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-todo {
+      background-color: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+
+    .status-in-progress {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .status-done {
+      background-color: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .priority-low {
+      background-color: rgba(100, 116, 139, 0.2);
+      color: #64748b;
+    }
+
+    .priority-medium {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .priority-high {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .grid-responsive {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      .grid-responsive {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body>
+  <div id="app"></div>
+  <script>
+    // ============================================
+    // STATE MANAGEMENT
+    // ============================================
+    let currentUser = null;
+    let tasks = [];
+    let auditLog = [];
+    let currentPage = 'tasks';
+    let filterStatus = 'all';
+    let editingTask = null;
+    let showModal = false;
+
+    // ============================================
+    // LOCAL STORAGE (since Data SDK is not available in VS Code)
+    // ============================================
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function loadTasks() {
+      const saved = localStorage.getItem('tasks');
+      tasks = saved ? JSON.parse(saved) : [];
+    }
+
+    function saveAuditLog() {
+      localStorage.setItem('auditLog', JSON.stringify(auditLog));
+    }
+
+    function loadAuditLog() {
+      const saved = localStorage.getItem('auditLog');
+      auditLog = saved ? JSON.parse(saved) : [];
+    }
+
+    // ============================================
+    // LOGIN SCREEN
+    // ============================================
+    function renderLogin() {
+      document.getElementById('app').innerHTML = `
+        <div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; padding: 16px; background: linear-gradient(135deg, #1e1e2e, #0f0f1a);">
+          <div class="fade-in" style="width: 100%; max-width: 400px; background-color: #2a2a3e; border-radius: 16px; padding: 32px; box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3);">
+            <h1 style="text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 24px; color: #f59e0b;">Multi-Tenant Task Manager</h1>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8;">Your Name</label>
+                <input type="text" id="login-name" placeholder="Enter your name" class="input-field" style="width: 100%;">
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8;">Organization</label>
+                <select id="login-org" class="input-field" style="width: 100%; cursor: pointer;">
+                  <option value="alpha">Alpha</option>
+                  <option value="beta">Beta</option>
+                  <option value="gamma">Gamma</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8;">Role</label>
+                <select id="login-role" class="input-field" style="width: 100%; cursor: pointer;">
+                  <option value="admin">Admin</option>
+                  <option value="member">Member</option>
+                </select>
+              </div>
+
+              <button onclick="handleLogin()" class="button-primary" style="width: 100%; padding: 12px; font-size: 16px; margin-top: 8px;">Sign In</button>
+            </div>
+
+            <p style="text-align: center; font-size: 11px; color: #64748b; margin-top: 16px;">🎭 Demo Mode – simulated authentication</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleLogin() {
+      const name = document.getElementById('login-name').value.trim();
+      const org = document.getElementById('login-org').value;
+      const role = document.getElementById('login-role').value;
+
+      if (!name) {
+        alert('Please enter your name');
+        return;
+      }
+
+      currentUser = { name, org, role };
+      loadTasks();
+      loadAuditLog();
+      renderDashboard();
+    }
+
+    function logout() {
+      currentUser = null;
+      currentPage = 'tasks';
+      filterStatus = 'all';
+      editingTask = null;
+      showModal = false;
+      renderLogin();
+    }
+
+    // ============================================
+    // DASHBOARD
+    // ============================================
+    function renderDashboard() {
+      const orgTasks = tasks.filter(t => t.org_id === currentUser.org);
+      const filteredTasks = filterStatus === 'all' ? orgTasks : orgTasks.filter(t => t.status === filterStatus);
+
+      let mainContent = '';
+      if (currentPage === 'tasks') {
+        mainContent = renderTasksPage(filteredTasks);
+      } else if (currentPage === 'audit') {
+        mainContent = renderAuditPage();
+      } else if (currentPage === 'info') {
+        mainContent = renderInfoPage();
+      }
+
+      document.getElementById('app').innerHTML = `
+        <div style="height: 100%; width: 100%; display: flex; flex-direction: column;">
+          <!-- NAVBAR -->
+          <header style="display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid #475569; background-color: #2a2a3e;">
+            <span style="font-size: 16px; font-weight: 700; color: #f59e0b;">📊 Multi-Tenant Task Manager</span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 14px;">${currentUser.name}</span>
+              <span class="badge ${currentUser.role === 'admin' ? 'badge-admin' : 'badge-member'}">${currentUser.role.toUpperCase()}</span>
+              <button onclick="logout()" class="button-secondary">Logout</button>
+            </div>
+          </header>
+
+          <div style="display: flex; flex-1; overflow: hidden;">
+            <!-- SIDEBAR -->
+            <aside class="sidebar" style="width: 224px; border-right: 1px solid #475569; padding: 16px; background-color: #1e1e2e; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;">
+              <div style="margin-bottom: 16px; padding: 12px; border-radius: 12px; background-color: #2a2a3e;">
+                <p style="font-size: 11px; color: #94a3b8;">Organization</p>
+                <p style="font-size: 14px; font-weight: 600; color: #f59e0b; margin-top: 4px; text-transform: capitalize;">${currentUser.org}</p>
+                <p style="font-size: 11px; color: #64748b; margin-top: 4px;">ID: org_${currentUser.org}</p>
+              </div>
+
+              <button onclick="switchPage('tasks')" style="width: 100%; text-align: left; padding: 10px 16px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; transition: all 0.2s ease; background-color: ${currentPage === 'tasks' ? '#475569' : 'transparent'}; color: ${currentPage === 'tasks' ? '#f59e0b' : '#e2e8f0'}; font-weight: ${currentPage === 'tasks' ? '600' : '500'};">📝 Tasks</button>
+
+              <button onclick="switchPage('audit')" style="width: 100%; text-align: left; padding: 10px 16px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; transition: all 0.2s ease; background-color: ${currentPage === 'audit' ? '#475569' : 'transparent'}; color: ${currentPage === 'audit' ? '#f59e0b' : '#e2e8f0'}; font-weight: ${currentPage === 'audit' ? '600' : '500'};">📋 Audit Log</button>
+
+              <button onclick="switchPage('info')" style="width: 100%; text-align: left; padding: 10px 16px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; transition: all 0.2s ease; background-color: ${currentPage === 'info' ? '#475569' : 'transparent'}; color: ${currentPage === 'info' ? '#f59e0b' : '#e2e8f0'}; font-weight: ${currentPage === 'info' ? '600' : '500'};">ℹ️ System Info</button>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main style="flex: 1; overflow-y: auto; padding: 24px;">
+              ${mainContent}
+            </main>
+          </div>
+        </div>
+
+        ${showModal ? renderModal() : ''}
+      `;
+
+      lucide.createIcons();
+    }
+
+    // ============================================
+    // TASKS PAGE
+    // ============================================
+    function renderTasksPage(filteredTasks) {
+      return `
+        <div class="fade-in">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+            <h2 style="font-size: 24px; font-weight: 700;">Tasks</h2>
+            <button onclick="openModal()" class="button-primary">+ New Task</button>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;">
+            <button onclick="setFilter('all')" style="padding: 8px 12px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; background-color: ${filterStatus === 'all' ? '#f59e0b' : '#2a2a3e'}; color: ${filterStatus === 'all' ? '#000' : '#e2e8f0'}; font-weight: ${filterStatus === 'all' ? '600' : '500'}; transition: all 0.2s ease;">All</button>
+            <button onclick="setFilter('todo')" style="padding: 8px 12px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; background-color: ${filterStatus === 'todo' ? '#f59e0b' : '#2a2a3e'}; color: ${filterStatus === 'todo' ? '#000' : '#e2e8f0'}; font-weight: ${filterStatus === 'todo' ? '600' : '500'}; transition: all 0.2s ease;">To Do</button>
+            <button onclick="setFilter('in_progress')" style="padding: 8px 12px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; background-color: ${filterStatus === 'in_progress' ? '#f59e0b' : '#2a2a3e'}; color: ${filterStatus === 'in_progress' ? '#000' : '#e2e8f0'}; font-weight: ${filterStatus === 'in_progress' ? '600' : '500'}; transition: all 0.2s ease;">In Progress</button>
+            <button onclick="setFilter('done')" style="padding: 8px 12px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; background-color: ${filterStatus === 'done' ? '#f59e0b' : '#2a2a3e'}; color: ${filterStatus === 'done' ? '#000' : '#e2e8f0'}; font-weight: ${filterStatus === 'done' ? '600' : '500'}; transition: all 0.2s ease;">Done</button>
+          </div>
+
+          ${filteredTasks.length === 0 ? `
+            <div style="text-align: center; padding: 48px 16px; color: #64748b;">
+              <p style="font-size: 16px; margin-bottom: 8px;">📭 No tasks found</p>
+              <p style="font-size: 14px;">Create a new task to get started</p>
+            </div>
+          ` : `
+            <div class="grid-responsive">
+              ${filteredTasks.map(task => renderTaskCard(task)).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderTaskCard(task) {
+      const canEdit = currentUser.role === 'admin' || task.created_by === currentUser.name;
+      const statusClass = `status-${task.status}`;
+      const priorityClass = `priority-${task.priority}`;
+
+      return `
+        <div class="card fade-in">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px;">
+            <h3 style="font-size: 16px; font-weight: 600; flex: 1;">${task.title}</h3>
+            <span class="status-badge ${statusClass}">${task.status.replace('_', ' ').toUpperCase()}</span>
+          </div>
+
+          <span class="badge ${priorityClass}" style="display: inline-block; margin-bottom: 12px;">${task.priority.toUpperCase()}</span>
+
+          <p style="font-size: 14px; color: #94a3b8; margin-bottom: 12px; min-height: 40px;">${task.description || 'No description provided'}</p>
+
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">👤 ${task.created_by} • ${new Date(task.created_at).toLocaleDateString()}</p>
+
+          ${canEdit ? `
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <select onchange="changeStatus('${task.id}', this.value)" class="input-field" style="flex: 1; font-size: 12px;">
+                <option value="">Change status...</option>
+                <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>To Do</option>
+                <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
+              </select>
+              <button onclick="editTask('${task.id}')" class="button-secondary">✏️ Edit</button>
+              <button onclick="deleteTaskConfirm('${task.id}')" class="button-secondary" style="background-color: #7f1d1d; color: #fca5a5;">🗑️ Delete</button>
+            </div>
+          ` : `
+            <p style="font-size: 12px; color: #64748b; font-style: italic;">📖 View only (not your task)</p>
+          `}
+        </div>
+      `;
+    }
+
+    // ============================================
+    // AUDIT LOG PAGE
+    // ============================================
+    function renderAuditPage() {
+      return `
+        <div class="fade-in">
+          <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">Audit Log</h2>
+
+          ${auditLog.length === 0 ? `
+            <div style="text-align: center; padding: 48px 16px; color: #64748b;">
+              <p>📭 No audit entries yet</p>
+            </div>
+          ` : `
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              ${auditLog.map((entry, idx) => `
+                <div class="card" style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 8px; height: 8px; border-radius: 50%; background-color: #f59e0b; flex-shrink: 0;"></div>
+                  <div style="flex: 1;">
+                    <p style="font-size: 14px;">
+                      <span style="font-weight: 600;">${entry.user}</span>
+                      <span style="color: #94a3b8;"> ${entry.action} </span>
+                      <span style="font-weight: 600; color: #f59e0b;">"${entry.task}"</span>
+                    </p>
+                  </div>
+                  <p style="font-size: 12px; color: #64748b; white-space: nowrap;">${entry.time}</p>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    // ============================================
+    // SYSTEM INFO PAGE
+    // ============================================
+    function renderInfoPage() {
+      const cards = [
+        {
+          title: '🔐 Tenant Isolation',
+          desc: 'Each organization (Alpha, Beta, Gamma) has completely isolated data via org_id filtering. Tasks belong to a single tenant only.'
+        },
+        {
+          title: '👥 Role-Based Access',
+          desc: 'Admins can manage all tasks. Members can only edit/delete their own tasks. Access is enforced at render time.'
+        },
+        {
+          title: '🔑 JWT Authentication',
+          desc: 'In production, JWT tokens carry user identity, role, and org claims for stateless authentication and authorization.'
+        },
+        {
+          title: '🐳 Containerization',
+          desc: 'This app is designed for Docker deployment with isolated services, environment variables, and horizontal scaling.'
+        }
+      ];
+
+      return `
+        <div class="fade-in">
+          <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 24px;">System Info</h2>
+          <div class="grid-responsive">
+            ${cards.map(card => `
+              <div class="card">
+                <h3 style="font-size: 16px; font-weight: 600; color: #f59e0b; margin-bottom: 8px;">${card.title}</h3>
+                <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">${card.desc}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================
+    // MODAL (Create/Edit Task)
+    // ============================================
+    function renderModal() {
+      const isEdit = editingTask !== null;
+      const task = editingTask || { title: '', description: '', status: 'todo', priority: 'medium' };
+
+      return `
+        <div class="modal-overlay" onclick="if (event.target === this) closeModal();">
+          <div class="modal-content fade-in">
+            <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;">${isEdit ? '✏️ Edit Task' : '✨ New Task'}</h3>
+
+            <form onsubmit="handleTaskSubmit(event, ${isEdit})" style="display: flex; flex-direction: column; gap: 16px;">
+              <div>
+                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8; font-weight: 500;">Title *</label>
+                <input type="text" id="modal-title" value="${task.title}" placeholder="Enter task title" class="input-field" style="width: 100%;" required>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8; font-weight: 500;">Description</label>
+                <textarea id="modal-description" placeholder="Enter task description" class="input-field" style="width: 100%; min-height: 80px; resize: vertical;">${task.description}</textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8; font-weight: 500;">Status</label>
+                  <select id="modal-status" class="input-field" style="width: 100%;">
+                    <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>To Do</option>
+                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="done" ${task.status === 'done' ? 'selected' : ''}>Done</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #94a3b8; font-weight: 500;">Priority</label>
+                  <select id="modal-priority" class="input-field" style="width: 100%;">
+                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <button type="submit" id="modal-submit" class="button-primary" style="flex: 1; padding: 12px;">${isEdit ? 'Update Task' : 'Create Task'}</button>
+                <button type="button" onclick="closeModal()" class="button-secondary" style="flex: 1; padding: 12px;">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================
+    // TASK OPERATIONS
+    // ============================================
+    function openModal() {
+      editingTask = null;
+      showModal = true;
+      renderDashboard();
+    }
+
+    function editTask(id) {
+      editingTask = tasks.find(t => t.id === id) || null;
+      showModal = true;
+      renderDashboard();
+    }
+
+    function closeModal() {
+      showModal = false;
+      editingTask = null;
+      renderDashboard();
+    }
+
+    function handleTaskSubmit(event, isEdit) {
+      event.preventDefault();
+
+      const title = document.getElementById('modal-title').value.trim();
+      const description = document.getElementById('modal-description').value.trim();
+      const status = document.getElementById('modal-status').value;
+      const priority = document.getElementById('modal-priority').value;
+
+      if (!title) {
+        alert('Please enter a task title');
+        return;
+      }
+
+      if (isEdit && editingTask) {
+        // Update existing task
+        const taskIndex = tasks.findIndex(t => t.id === editingTask.id);
+        if (taskIndex !== -1) {
+          tasks[taskIndex] = {
+            ...tasks[taskIndex],
+            title,
+            description,
+            status,
+            priority,
+            updated_at: new Date().toISOString()
+          };
+          addAudit('updated', title);
+          saveTasks();
+        }
+      } else {
+        // Create new task
+        const newTask = {
+          id: Date.now().toString(),
+          title,
+          description,
+          status,
+          priority,
+          org_id: currentUser.org,
+          created_by: currentUser.name,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        tasks.push(newTask);
+        addAudit('created', title);
+        saveTasks();
+      }
+
+      showModal = false;
+      editingTask = null;
+      renderDashboard();
+    }
+
+    function changeStatus(id, newStatus) {
+      if (!newStatus) return;
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      task.status = newStatus;
+      task.updated_at = new Date().toISOString();
+      addAudit('updated status of', task.title);
+      saveTasks();
+      renderDashboard();
+    }
+
+    function deleteTaskConfirm(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+        tasks = tasks.filter(t => t.id !== id);
+        addAudit('deleted', task.title);
+        saveTasks();
+        renderDashboard();
+      }
+    }
+
+    // ============================================
+    // NAVIGATION
+    // ============================================
+    function switchPage(page) {
+      currentPage = page;
+      filterStatus = 'all';
+      renderDashboard();
+    }
+
+    function setFilter(status) {
+      filterStatus = status;
+      renderDashboard();
+    }
+
+    // ============================================
+    // AUDIT LOG
+    // ============================================
+    function addAudit(action, taskName) {
+      const entry = {
+        user: currentUser.name,
+        action: action,
+        task: taskName,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      auditLog.unshift(entry);
+      // Keep only last 100 entries
+      if (auditLog.length > 100) auditLog.pop();
+      saveAuditLog();
+    }
+
+    // ============================================
+    // INITIALIZE APP
+    // ============================================
+    renderLogin();
+  </script>
+  <script>
+const defaultConfig = {
+  app_title: 'Multi-Tenant Task Manager',
+  background_color: '#1e1e2e',
+  card_color: '#2a2a3e',
+  text_color: '#e2e8f0',
+  accent_color: '#f59e0b',
+  secondary_action_color: '#64748b',
+  font_family: 'DM Sans',
+  font_size: 15
+};
+
+let config = { ...defaultConfig };
+let currentUser = null;
+let tasks = [];
+let auditLog = [];
+let currentPage = 'tasks';
+let filterStatus = 'all';
+let editingTask = null;
+let showModal = false;
+let recordCount = 0;
+
+// Element SDK
+window.elementSdk.init({
+  defaultConfig,
+  onConfigChange: async (c) => {
+    config = { ...defaultConfig, ...c };
+    document.body.style.backgroundColor = config.background_color;
+    document.body.style.color = config.text_color;
+    document.body.style.fontFamily = `${config.font_family}, sans-serif`;
+    if (currentUser) renderDashboard();
+  },
+  mapToCapabilities: (c) => ({
+    recolorables: [
+      { get: () => c.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+      { get: () => c.card_color || defaultConfig.card_color, set: (v) => { config.card_color = v; window.elementSdk.setConfig({ card_color: v }); } },
+      { get: () => c.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+      { get: () => c.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
+      { get: () => c.secondary_action_color || defaultConfig.secondary_action_color, set: (v) => { config.secondary_action_color = v; window.elementSdk.setConfig({ secondary_action_color: v }); } }
+    ],
+    borderables: [],
+    fontEditable: { get: () => c.font_family || defaultConfig.font_family, set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); } },
+    fontSizeable: { get: () => c.font_size || defaultConfig.font_size, set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); } }
+  }),
+  mapToEditPanelValues: (c) => new Map([['app_title', c.app_title || defaultConfig.app_title]])
+});
+
+// Data SDK
+const dataHandler = {
+  onDataChanged(data) {
+    tasks = data.filter(d => d.org_id && d.title);
+    recordCount = data.length;
+    if (currentUser) renderDashboard();
+  }
+};
+
+(async () => {
+  const r = await window.dataSdk.init(dataHandler);
+  if (!r.isOk) console.error('Data SDK init failed');
+})();
+
+// Auth
+function renderLogin() {
+  const app = document.getElementById('app');
+  const bs = config.font_size || defaultConfig.font_size;
+  app.innerHTML = `
+    <div class="h-full w-full flex items-center justify-center p-4" style="background: linear-gradient(135deg, ${config.background_color}, #0f0f1a);">
+      <div class="fade-in w-full max-w-sm rounded-2xl p-8 shadow-2xl" style="background: ${config.card_color};">
+        <h1 class="text-center font-bold mb-6" style="font-size:${bs*1.6}px; color:${config.accent_color};">${config.app_title || defaultConfig.app_title}</h1>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm mb-1" style="color:${config.muted || '#94a3b8'}">Name</label>
+            <input id="login-name" type="text" placeholder="Your name" class="w-full rounded-lg px-4 py-2.5 bg-surface border border-slate-600 focus:border-amber-500 focus:outline-none text-slate-200" style="font-size:${bs}px;">
+          </div>
+          <div>
+            <label class="block text-sm mb-1" style="color:#94a3b8">Organization</label>
+            <select id="login-org" class="w-full rounded-lg px-4 py-2.5 bg-surface border border-slate-600 text-slate-200 focus:outline-none" style="font-size:${bs}px;">
+              <option value="alpha">Alpha</option>
+              <option value="beta">Beta</option>
+              <option value="gamma">Gamma</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1" style="color:#94a3b8">Role</label>
+            <select id="login-role" class="w-full rounded-lg px-4 py-2.5 bg-surface border border-slate-600 text-slate-200 focus:outline-none" style="font-size:${bs}px;">
+              <option value="admin">Admin</option>
+              <option value="member">Member</option>
+            </select>
+          </div>
+          <button onclick="handleLogin()" class="w-full py-3 rounded-lg font-semibold transition-all hover:scale-[1.02]" style="background:${config.accent_color}; color:#000; font-size:${bs}px;">Sign In</button>
+        </div>
+        <p class="text-center text-xs mt-4" style="color:#64748b;">Demo Mode – simulated authentication</p>
+      </div>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+function handleLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const org = document.getElementById('login-org').value;
+  const role = document.getElementById('login-role').value;
+  if (!name) return;
+  currentUser = { name, org, role };
+  auditLog = [];
+  renderDashboard();
+}
+
+function logout() {
+  currentUser = null;
+  currentPage = 'tasks';
+  renderLogin();
+}
+
+// Dashboard
+function renderDashboard() {
+  const app = document.getElementById('app');
+  const bs = config.font_size || defaultConfig.font_size;
+  const orgTasks = tasks.filter(t => t.org_id === currentUser.org);
+  const filteredTasks = filterStatus === 'all' ? orgTasks : orgTasks.filter(t => t.status === filterStatus);
+
+  app.innerHTML = `
+    <div class="h-full w-full flex flex-col">
+      <!-- Navbar -->
+      <header class="flex items-center justify-between px-6 py-3 border-b border-slate-700" style="background:${config.card_color};">
+        <span class="font-bold" style="font-size:${bs*1.2}px; color:${config.accent_color};">${config.app_title || defaultConfig.app_title}</span>
+        <div class="flex items-center gap-3">
+          <span style="font-size:${bs*0.85}px;">${currentUser.name}</span>
+          <span class="px-2 py-0.5 rounded text-xs font-semibold" style="background:${currentUser.role==='admin'?config.accent_color:'#475569'}; color:${currentUser.role==='admin'?'#000':'#e2e8f0'};">${currentUser.role}</span>
+          <button onclick="logout()" class="px-3 py-1.5 rounded-lg text-sm hover:opacity-80 transition" style="background:${config.secondary_action_color}; color:#fff;">Logout</button>
+        </div>
+      </header>
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-56 shrink-0 border-r border-slate-700 p-4 flex flex-col gap-2 overflow-auto" style="background:${config.background_color};">
+          <div class="mb-4 p-3 rounded-xl" style="background:${config.card_color};">
+            <p class="text-xs" style="color:#94a3b8;">Organization</p>
+            <p class="font-semibold capitalize" style="color:${config.accent_color};">${currentUser.org}</p>
+            <p class="text-xs mt-1" style="color:#64748b;">ID: org_${currentUser.org}</p>
+          </div>
+          ${['tasks','audit','info'].map(p => `
+            <button onclick="switchPage('${p}')" class="w-full text-left px-4 py-2.5 rounded-lg text-sm transition ${currentPage===p?'font-semibold':''}" style="background:${currentPage===p?config.card_color:'transparent'}; color:${currentPage===p?config.accent_color:config.text_color};">
+              ${p==='tasks'?'Tasks':p==='audit'?'Audit Log':'System Info'}
+            </button>
+          `).join('')}
+        </aside>
+        <!-- Main -->
+        <main class="flex-1 overflow-auto p-6">
+          ${currentPage==='tasks'?renderTasksPage(filteredTasks, bs):currentPage==='audit'?renderAuditPage(bs):renderInfoPage(bs)}
+        </main>
+      </div>
+    </div>
+    ${showModal?renderModal(bs):''}
+  `;
+  lucide.createIcons();
+}
+
+function renderTasksPage(filteredTasks, bs) {
+  const statuses = ['all','todo','in_progress','done'];
+  const labels = { all:'All', todo:'To Do', in_progress:'In Progress', done:'Done' };
+  return `
+    <div class="fade-in">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="font-bold" style="font-size:${bs*1.5}px;">Tasks</h2>
+        <button onclick="openModal()" class="px-4 py-2 rounded-lg font-semibold text-sm transition hover:scale-[1.02]" style="background:${config.accent_color}; color:#000;">+ New Task</button>
+      </div>
+      <div class="flex gap-2 mb-5 flex-wrap">
+        ${statuses.map(s => `<button onclick="setFilter('${s}')" class="px-3 py-1.5 rounded-lg text-sm transition" style="background:${filterStatus===s?config.accent_color:config.card_color}; color:${filterStatus===s?'#000':config.text_color};">${labels[s]}</button>`).join('')}
+      </div>
+      ${filteredTasks.length===0?`<p class="text-center py-12" style="color:#64748b;">No tasks found. Create one!</p>`:`
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          ${filteredTasks.map(t => renderTaskCard(t, bs)).join('')}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function renderTaskCard(t, bs) {
+  const statusColors = { todo:'#3b82f6', in_progress:'#f59e0b', done:'#22c55e' };
+  const priorityColors = { low:'#64748b', medium:'#f59e0b', high:'#ef4444' };
+  const canEdit = currentUser.role === 'admin' || t.created_by === currentUser.name;
+  return `
+    <div class="rounded-xl p-4 border border-slate-700 transition hover:border-amber-500/50" style="background:${config.card_color};">
+      <div class="flex items-start justify-between mb-2">
+        <h3 class="font-semibold" style="font-size:${bs}px;">${t.title}</h3>
+        <span class="px-2 py-0.5 rounded text-xs font-medium" style="background:${statusColors[t.status]||'#64748b'}20; color:${statusColors[t.status]||'#64748b'};">${t.status?.replace('_',' ')}</span>
+      </div>
+      <span class="inline-block px-2 py-0.5 rounded text-xs mb-2" style="background:${priorityColors[t.priority]||'#64748b'}20; color:${priorityColors[t.priority]||'#64748b'};">${t.priority}</span>
+      <p class="text-sm mb-3" style="color:#94a3b8;">${t.description||'No description'}</p>
+      <p class="text-xs mb-3" style="color:#64748b;">by ${t.created_by} · ${new Date(t.created_at).toLocaleDateString()}</p>
+      ${canEdit?`
+        <div class="flex gap-2 flex-wrap">
+          <select onchange="changeStatus('${t.__backendId}', this.value)" class="text-xs rounded px-2 py-1 bg-surface border border-slate-600 text-slate-300">
+            <option value="">Status...</option>
+            <option value="todo">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+          <button onclick="openEditModal('${t.__backendId}')" class="text-xs px-2 py-1 rounded" style="background:${config.secondary_action_color}; color:#fff;">Edit</button>
+          <button onclick="deleteTask('${t.__backendId}')" class="text-xs px-2 py-1 rounded bg-red-900/50 text-red-300 hover:bg-red-800/50">Delete</button>
+        </div>
+      `:'<p class="text-xs italic" style="color:#64748b;">View only</p>'}
+    </div>
+  `;
+}
+
+function renderAuditPage(bs) {
+  return `
+    <div class="fade-in">
+      <h2 class="font-bold mb-6" style="font-size:${bs*1.5}px;">Audit Log</h2>
+      ${auditLog.length===0?'<p style="color:#64748b;">No actions recorded yet.</p>':`
+        <div class="space-y-3">
+          ${auditLog.map(a => `
+            <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-700" style="background:${config.card_color};">
+              <div class="w-2 h-2 rounded-full" style="background:${config.accent_color};"></div>
+              <div class="flex-1">
+                <span class="font-medium">${a.user}</span>
+                <span style="color:#94a3b8;"> ${a.action} </span>
+                <span class="font-medium" style="color:${config.accent_color};">"${a.task}"</span>
+              </div>
+              <span class="text-xs" style="color:#64748b;">${a.time}</span>
+            </div>
+          `).join('')}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function renderInfoPage(bs) {
+  const cards = [
+    { title:'Tenant Isolation', desc:'Each organization (Alpha, Beta, Gamma) has isolated data via org_id filtering. Tasks are scoped per tenant.' },
+    { title:'Role-Based Access', desc:'Admins manage all tasks within their org. Members can only edit/delete their own tasks.' },
+    { title:'JWT Authentication', desc:'In production, JWT tokens carry user identity, role, and org claims for stateless auth.' },
+    { title:'Containerization', desc:'This app is designed for Docker deployment with isolated services and scalable architecture.' }
+  ];
+  return `
+    <div class="fade-in">
+      <h2 class="font-bold mb-6" style="font-size:${bs*1.5}px;">System Info</h2>
+      <div class="grid gap-4 md:grid-cols-2">
+        ${cards.map(c => `
+          <div class="p-5 rounded-xl border border-slate-700" style="background:${config.card_color};">
+            <h3 class="font-semibold mb-2" style="color:${config.accent_color}; font-size:${bs*1.1}px;">${c.title}</h3>
+            <p class="text-sm" style="color:#94a3b8;">${c.desc}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderModal(bs) {
+  const t = editingTask;
+  return `
+    <div class="fixed inset-0 flex items-center justify-center z-50 p-4" style="background:rgba(0,0,0,0.7);" onclick="closeModal(event)">
+      <div class="w-full max-w-md rounded-2xl p-6 fade-in" style="background:${config.card_color};" onclick="event.stopPropagation()">
+        <h3 class="font-bold mb-4" style="font-size:${bs*1.3}px;">${t?'Edit Task':'New Task'}</h3>
+        <form onsubmit="handleTaskSubmit(event)" class="space-y-4">
+          <input id="m-title" value="${t?t.title:''}" placeholder="Title" required class="w-full rounded-lg px-4 py-2.5 bg-surface border border-slate-600 text-slate-200 focus:outline-none focus:border-amber-500">
+          <textarea id="m-desc" placeholder="Description" rows="3" class="w-full rounded-lg px-4 py-2.5 bg-surface border border-slate-600 text-slate-200 focus:outline-none focus:border-amber-500">${t?t.description:''}</textarea>
+          <div class="grid grid-cols-2 gap-3">
+            <select id="m-status" class="rounded-lg px-4 py-2.5 bg-surface border border-slate-600 text-slate-200">
+              <option value="todo" ${t&&t.status==='todo'?'selected':''}>To Do</option>
+              <option value="in_progress" ${t&&t.status==='in_progress'?'selected':''}>In Progress</option>
+              <option value="done" ${t&&t.status==='done'?'selected':''}>Done</option>
+            </select>
+            <select id="m-priority" class="rounded-lg px-4 py-2.5 bg-surface border border-slate-600 text-slate-200">
+              <option value="low" ${t&&t.priority==='low'?'selected':''}>Low</option>
+              <option value="medium" ${t&&t.priority==='medium'?'selected':''}>Medium</option>
+              <option value="high" ${t&&t.priority==='high'?'selected':''}>High</option>
+            </select>
+          </div>
+          <button type="submit" id="m-submit" class="w-full py-3 rounded-lg font-semibold transition hover:scale-[1.02]" style="background:${config.accent_color}; color:#000;">${t?'Update':'Create'} Task</button>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+function switchPage(p) { currentPage = p; renderDashboard(); }
+function setFilter(s) { filterStatus = s; renderDashboard(); }
+
+function openModal() { editingTask = null; showModal = true; renderDashboard(); }
+function openEditModal(id) { editingTask = tasks.find(t => t.__backendId === id) || null; showModal = true; renderDashboard(); }
+function closeModal(e) { if (e.target === e.currentTarget) { showModal = false; renderDashboard(); } }
+
+async function handleTaskSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('m-submit');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const title = document.getElementById('m-title').value.trim();
+  const description = document.getElementById('m-desc').value.trim();
+  const status = document.getElementById('m-status').value;
+  const priority = document.getElementById('m-priority').value;
+
+  if (editingTask) {
+    const updated = { ...editingTask, title, description, status, priority };
+    const r = await window.dataSdk.update(updated);
+    if (r.isOk) { addAudit('updated', title); }
+  } else {
+    if (recordCount >= 999) { btn.textContent = 'Limit reached!'; return; }
+    const r = await window.dataSdk.create({ task_id: Date.now().toString(), title, description, status, priority, org_id: currentUser.org, created_by: currentUser.name, created_at: new Date().toISOString(), role: currentUser.role });
+    if (r.isOk) { addAudit('created', title); }
+  }
+  showModal = false;
+  renderDashboard();
+}
+
+async function changeStatus(id, status) {
+  if (!status) return;
+  const t = tasks.find(x => x.__backendId === id);
+  if (!t) return;
+  const r = await window.dataSdk.update({ ...t, status });
+  if (r.isOk) addAudit('updated status of', t.title);
+}
+
+async function deleteTask(id) {
+  const t = tasks.find(x => x.__backendId === id);
+  if (!t) return;
+  const r = await window.dataSdk.delete(t);
+  if (r.isOk) addAudit('deleted', t.title);
+}
+
+function addAudit(action, task) {
+  auditLog.unshift({ user: currentUser.name, action, task, time: new Date().toLocaleTimeString() });
+}
+
+// Init
+renderLogin();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f6d5cf746cc7e91',t:'MTc3Nzk1OTEzMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
